@@ -257,7 +257,7 @@ def newick2tree(newick=None):
             print('Check your newick tree! Or maybe there are something I do not know about newick!')
     return mytree
 
-def tumopp2tree(tumopp=None,sectors=None,justpick=None):
+def tumopp2tree(tumopp=None,sectors=None,build_tree=None):
     '''
     Build tree from tumopp output, and output three variables:
     root:
@@ -317,7 +317,7 @@ def tumopp2tree(tumopp=None,sectors=None,justpick=None):
                     picked[sector].append(info['id'])
                     info['sector']=sector
                     break
-        if justpick:
+        if not build_tree:
             continue
 
         node=tree(nodeid=info['id'],
@@ -505,10 +505,10 @@ def main():
         help='the output file to save the original tree simulated by tumopp [{}]'.format(default))
     default=None
     parser.add_argument('-t','--subtree',type=str,default=default,
-        help='the output file to save the subtree picked by coordinate [{}]'.format(default))
+        help='the output file to save the subtree picked by user [{}]'.format(default))
     default='sampled.txt'
     parser.add_argument('-S','--sample',type=str,default=default,
-        help='the output file to save the samples picked by coordinate [{}]'.format(default))
+        help='the output file to save the samples picked by user [{}]'.format(default))
     default=1
     parser.add_argument('-p','--psam',type=int,default=default,
         help='the number of samples from each deme [{}]'.format(default))
@@ -521,33 +521,29 @@ def main():
     default=None
     parser.add_argument('--ms',type=str,default=default,
         help='the output file to save the ms code [{}]'.format(default))
-    parser.add_argument('--justpick',action="store_true",
-        help='just output the slected node records'.format(default))
     parser.add_argument('--summary',action="store_true",
         help='just print out the size summary of the input tumor'.format(default))
     args=parser.parse_args()
-    print(args.map)
 
-    sectors={}
-    if args.group:
-        sectors={}
-    elif args.sector:
-        sectors=parse_sector(args.sector)
-    else:
-        sectors={'sector0':[args.xrange,args.yrange,args.zrange]}
-    #print(sectors)
-    sectors=parse_range(sectors)
-    #print(sectors)
-
-    if args.tumopp:
-        inputf=args.tumopp
-    elif '-' in sys.argv:
-        inputf=args.tumopp
-    else:
+    if not args.tumopp:
         parser.print_help()
         exit(0)
-    with fileinput.input(files=inputf) as tumopp:
-        root,nodes,picked,limits=tumopp2tree(tumopp=tumopp,sectors=sectors,justpick=args.justpick)
+
+    build_tree=False
+    if any([args.tree,args.subtree,args.map,args.ms]):
+        build_tree=True
+
+    if args.group:
+        sectors={}
+    else:
+        if args.sector:
+            sectors=parse_sector(args.sector)
+        else:
+            sectors={'sector0':[args.xrange,args.yrange,args.zrange]}
+        sectors=parse_range(sectors)
+
+    with fileinput.input(files=args.tumopp) as tumopp:
+        root,nodes,picked,limits=tumopp2tree(tumopp=tumopp,sectors=sectors,build_tree=build_tree)
         if args.group:
 #read the picked settings from the --group file
             picked=parse_group(args.group)
@@ -569,13 +565,14 @@ def main():
             for sector in sorted(picked.keys()):
                 output.write('{}\t{}\t{}\n'.format(sector,len(picked[sector]),','.join(picked[sector])))
 
-    if args.justpick or not any([args.tree,args.subtree,args.map,args.ms]):
+    if not build_tree:
         exit(0)
 
     now=assign_tipnode_lifesp(nodes=nodes)
     if args.tree:
         with open(args.tree,'w') as output:
-            output.write(root.nhx_tree(attr=['nodeid','birth','death'])+'\n')
+            #output.write(root.nhx_tree(attr=['nodeid','birth','death'])+'\n')
+            output.write(root.nhx_tree(attr=['nodeid','lens','lifesp'])+'\n')
 
     sampled=[]
     for ids in picked.values():
@@ -588,7 +585,7 @@ def main():
             subtree=root.subtree(selected=set(sampled))
     if args.subtree:
         with open(args.subtree,'w') as output:
-            output.write(subtree.nhx_tree(lens=True,attr=['nodeid','sector','lens'])+'\n')
+            output.write(subtree.nhx_tree(lens=True,attr=['nodeid','sector','lens','lifesp'])+'\n')
 
     if args.map or args.ms:
         label_map,ms=subtree.tree2ms(now=now,psam=args.psam,howmany=args.howmany)
