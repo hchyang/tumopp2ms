@@ -408,7 +408,7 @@ def check_range(s=None):
     assert start<=end, 'Start should not be larger than end in a range.'
     return start,end
 
-def parse_rangef(sectorf=None):
+def parse_rangef(rangef=None):
     '''
     Parse the range file into a dictionary with the structure:
     {sector1:[[xstart,xend],[ystart,yend],[zstart,zend]],
@@ -419,7 +419,7 @@ def parse_rangef(sectorf=None):
     will just put None there instead.
     '''
     sectors={}
-    with open(sectorf) as input:
+    with open(rangef) as input:
         try:
             header=next(input)
         except StopIteration:
@@ -445,14 +445,14 @@ def parse_rangef(sectorf=None):
                     sectors[info['sector']].append([start,end])
     return sectors
 
-def parse_sector(groupf=None):
+def parse_sector(sectorf=None):
     '''
     Read the sector settings from sector file, which contains two columns with a header line:
     sector: sector name
     id: the nodeids in the sector separated by commas
     '''
     sectors={}
-    with open(groupf) as input:
+    with open(sectorf) as input:
         try:
             header=next(input)
         except StopIteration:
@@ -460,7 +460,7 @@ def parse_sector(groupf=None):
         header=header.rstrip()
         header=header.split()
         assert set(header)==set(['sector','id']), \
-            "The range file should start with a header containing 'sector','id'!"
+            "The sector file should start with a header containing 'sector','id'!"
         for line in input:
             line=line.rstrip()
             columns=line.split()
