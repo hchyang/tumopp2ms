@@ -19,6 +19,9 @@ import fileinput
 from signal import signal, SIGPIPE, SIG_DFL 
 signal(SIGPIPE,SIG_DFL) 
 
+class ShouldNotBeHereError(Exception):
+    pass
+
 class tree:
     def __init__(self,name=None,lens=None,left=None,right=None,top=None,
         nodeid=None,x=None,y=None,z=None,birth=None,death=None,lifesp=None,omega=None):
@@ -125,34 +128,40 @@ class tree:
                     ' '.join([str(x) for x in reversed(sorted([int(self.right.ms_label),int(self.left.ms_label)]))])
         return self.ms_ejoin
     
-    def nhx_tree(self,lens=False,attr=None):
-        nhx_str=self.nhx(lens=lens,attr=attr)
-        if nhx_str:
-            nhx_str+=';'
-        return nhx_str
-
-    def nhx(self,lens=False,attr=None):
-        nhx_str=''
-        if self is None: 
-            return nhx_str
-        if self.left != None:
-            nhx_str+='('+self.left.nhx(lens=lens,attr=attr)
-        if self.name==None:
-            nhx_str+=','
+    def tree_str(self,fmt='nhx',lens=False,attr=None):
+        if fmt=='newick':
+            assert attr==None, 'Can not ouput attributes: {} in newick format!'.format(attr)
+        elif fmt=='nhx':
+            pass
         else:
-            nhx_str+=self.name
+            raise ShouldNotBeHereError("Only the 'newick' and 'nhx' format are supported!")
+        the_str=self.tree_string(lens=lens,attr=attr)
+        if the_str:
+            the_str+=';'
+        return the_str
+
+    def tree_string(self,lens=False,attr=None):
+        the_str=''
+        if self is None: 
+            return the_str
+        if self.left != None:
+            the_str+='('+self.left.tree_string(lens=lens,attr=attr)
+        if self.name==None:
+            the_str+=','
+        else:
+            the_str+=self.name
 
         if self.right != None:
-            nhx_str+=self.right.nhx(lens=lens,attr=attr)+')'
+            the_str+=self.right.tree_string(lens=lens,attr=attr)+')'
         if self.lens!=None and lens:
-            nhx_str+=':{}'.format(self.lens)
+            the_str+=':{}'.format(self.lens)
         if attr!=None :
-            nhx_str+='[&&NHX'
+            the_str+='[&&NHX'
             for attribute in attr:
                 if getattr(self, attribute,None)!=None:
-                    nhx_str+=':{}={}'.format(attribute,getattr(self, attribute))
-            nhx_str+=']'
-        return nhx_str
+                    the_str+=':{}={}'.format(attribute,getattr(self, attribute))
+            the_str+=']'
+        return the_str
 
     def subtree(self,selected=None):
         '''
@@ -569,13 +578,11 @@ def main():
     now=assign_tipnode_lifesp(nodes=nodes)
     if args.tree:
         with open(args.tree,'w') as output:
-            #output.write(root.nhx_tree(attr=['nodeid','birth','death'])+'\n')
-            output.write(root.nhx_tree(attr=['nodeid','lens','lifesp'])+'\n')
+            output.write(root.tree_str(fmt='nhx',attr=['nodeid','lens','lifesp'])+'\n')
 
     sampled=[]
     for ids in picked.values():
         sampled.extend(ids)
-    #print(root.nhx_tree(attr=['nodeid','sector']))
     if sampled:
         if len(sampled)==root.leaves_counting():
             subtree=root
@@ -583,7 +590,7 @@ def main():
             subtree=root.subtree(selected=set(sampled))
     if args.subtree:
         with open(args.subtree,'w') as output:
-            output.write(subtree.nhx_tree(lens=True,attr=['nodeid','sector','lens','lifesp'])+'\n')
+            output.write(subtree.tree_str(fmt='newick',lens=True)+'\n')
 
     if args.map or args.ms:
         label_map,ms=subtree.tree2ms(now=now,psam=args.psam,howmany=args.howmany)
