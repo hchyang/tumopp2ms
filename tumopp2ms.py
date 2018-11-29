@@ -542,6 +542,7 @@ def main():
 ##--sector > --rangef > --[xyz]range
     if args.sector:
         sectors={}
+        picked_infile=parse_sector(args.sector)
     else:
         if args.rangef:
             sectors=parse_rangef(args.rangef)
@@ -553,7 +554,7 @@ def main():
         root,nodes,picked,limits=tumopp2tree(tumopp=tumopp,sectors=sectors,build_tree=build_tree)
         if args.sector:
 #read the picked settings from the --sector file
-            picked=parse_sector(args.sector)
+            picked=picked_infile
             for sector in picked:
                 for node in picked[sector]:
                     assert node in nodes and nodes[node].death==0, \
