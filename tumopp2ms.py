@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #########################################################################
 # Author: Hechuan Yang
@@ -325,6 +325,7 @@ def tumopp2tree(tumopp=None,sectors=None,build_tree=None):
                     zrange[0]<=info['z']<=zrange[1]:
                     picked[sector].append(info['id'])
                     info['sector']=sector
+#so every node belongs to just one sector
                     break
         if not build_tree:
             continue
