@@ -513,10 +513,16 @@ def main():
         help='the input file which contains the IDs of nodes in sectors [{}]'.format(default))
     default=None
     parser.add_argument('-T','--tree',type=str,default=default,
-        help='the output file to save the original tree simulated by tumopp [{}]'.format(default))
+        help='the output file to save the original tree simulated by tumopp in newick format [{}]'.format(default))
+    default=None
+    parser.add_argument('--tree_nhx',type=str,default=default,
+        help='the output file to save the original tree simulated by tumopp in NHX format [{}]'.format(default))
     default=None
     parser.add_argument('-t','--subtree',type=str,default=default,
-        help='the output file to save the subtree picked by user [{}]'.format(default))
+        help='the output file to save the subtree picked by user in newick format [{}]'.format(default))
+    default=None
+    parser.add_argument('--subtree_nhx',type=str,default=default,
+        help='the output file to save the subtree picked by user in NHX format [{}]'.format(default))
     default='sampled.txt'
     parser.add_argument('-S','--sample',type=str,default=default,
         help='the output file to save the samples picked by user [{}]'.format(default))
@@ -580,6 +586,9 @@ def main():
     now=assign_tipnode_lifesp(nodes=nodes)
     if args.tree:
         with open(args.tree,'w') as output:
+            output.write(root.tree_str(fmt='newick',lens=True)+'\n')
+    if args.tree_nhx:
+        with open(args.tree_nhx,'w') as output:
             output.write(root.tree_str(fmt='nhx',attr=['nodeid','lens','lifesp'])+'\n')
 
     sampled=[]
@@ -593,6 +602,9 @@ def main():
     if args.subtree:
         with open(args.subtree,'w') as output:
             output.write(subtree.tree_str(fmt='newick',lens=True)+'\n')
+    if args.subtree_nhx:
+        with open(args.subtree_nhx,'w') as output:
+            output.write(subtree.tree_str(fmt='nhx',attr=['nodeid','lens','lifesp'])+'\n')
 
     if args.map or args.ms:
         label_map,ms=subtree.tree2ms(now=now,psam=args.psam,howmany=args.howmany)
