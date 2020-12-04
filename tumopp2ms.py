@@ -38,6 +38,7 @@ class tree:
         self.death=death
         self.lifesp=lifesp
         self.omega=omega
+        self.cells=[self.name]
 
     def add_node(self,node):
         '''
@@ -371,6 +372,26 @@ def tumopp2tree(tumopp=None,sectors=None,build_tree=None):
         elif info['ancestor']!='0':
             nodes[info['ancestor']]=tree(nodeid=info['ancestor'],left=node)
             node.top=nodes[info['ancestor']]
+
+#if death rate is not 0, tumopp will generate some cells with only one daughter. 
+#We need to fix these nodes affected by events of this kind.
+    all_nodes_id=sorted(nodes.keys())
+    for node in all_nodes_id:
+        if nodes[node].left!=None and nodes[node].right==None:
+            nodes[node].left.top=nodes[node].top
+            nodes[node].left.lens+=nodes[node].lens
+            nodes[node].left.birth=nodes[node].birth
+            if nodes[node].left.death!=0:
+                nodes[node].left.lifesp=nodes[node].left.death-nodes[node].left.birth
+            nodes[node].left.cells.extend(nodes[node].top.cells)
+            if nodes[node].top==None:
+                root=nodes[node].left
+            elif nodes[node].top.left.nodeid==node:
+                nodes[node].top.left=nodes[node].left
+            elif nodes[node].top.right.nodeid==node:
+                nodes[node].top.right=nodes[node].left
+            del(nodes[node])
+
     return root,nodes,picked,limits
 
 def assign_tipnode_lifesp(nodes=None,shortest=None):
